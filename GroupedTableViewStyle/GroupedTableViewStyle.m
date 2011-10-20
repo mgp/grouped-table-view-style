@@ -18,6 +18,15 @@
   label.shadowOffset = CGSizeMake(0, 1);
 }
 
++ (CGFloat) widthForHeaderText:(NSString *)headerText {
+  UIFont *font = [UIFont boldSystemFontOfSize:kHeaderFontHeight];
+  CGSize headerTextSize = [headerText
+                           sizeWithFont:font
+                           constrainedToSize:CGSizeMake(INT_MAX, font.lineHeight)
+                           lineBreakMode:UILineBreakModeClip];
+  return headerTextSize.width;
+}
+
 + (CGFloat) heightForHeaderInSection:(NSUInteger)section {
   if (section == 0) {
     // First section has extra height.
@@ -41,11 +50,27 @@
   } else {
     topPosition = 13;
   }
+  
+  UILabel *label = [GroupedTableViewStyle labelLikeHeaderWithText:text];
+  CGRect frame = label.frame;
+  frame.origin = CGPointMake(kLabelLeftPosition, topPosition);
+  if (frame.size.width > kLabelWidth) {
+    // Do not exceed the maximum width.
+    frame.size.width = kLabelWidth;
+  }
+  label.frame = frame;
+  [header addSubview:label];
+  return header;
+}
+
++ (UILabel *) labelLikeHeaderWithText:(NSString *)text {
+  CGFloat headerTextWidth = [GroupedTableViewStyle widthForHeaderText:text];
   UIFont *font = [UIFont boldSystemFontOfSize:kHeaderFontHeight];
+  
   UILabel *label = [[[UILabel alloc]
-                     initWithFrame:CGRectMake(kLabelLeftPosition,
-                                              topPosition,
-                                              kLabelWidth,
+                     initWithFrame:CGRectMake(0,
+                                              0,
+                                              headerTextWidth,
                                               font.lineHeight)]
                     autorelease];
   label.backgroundColor = [UIColor clearColor];
@@ -53,21 +78,22 @@
   label.font = font;
   [GroupedTableViewStyle setLabelColorAndShadow:label];
   
-  [header addSubview:label];
-  return header;
+  return label;
 }
 
-+ (CGFloat) heightForFooterText:(NSString *)footerText {
-  CGSize headerTextSize = [footerText
++ (CGFloat) heightForFooterText:(NSString *)footerText
+                      withWidth:(CGFloat)width {
+  CGSize footerTextSize = [footerText
                            sizeWithFont:[UIFont systemFontOfSize:kFooterFontHeight]
-                           constrainedToSize:CGSizeMake(kLabelWidth, INT_MAX)
+                           constrainedToSize:CGSizeMake(width, INT_MAX)
                            lineBreakMode:UILineBreakModeWordWrap];
-  return headerTextSize.height;
+  return footerTextSize.height;
 }
 
 + (CGFloat) heightForFooterWithText:(NSString *)text
                       isLastSection:(BOOL)isLastSection {
-  CGFloat footerHeight = (6 + [GroupedTableViewStyle heightForFooterText:text]);
+  CGFloat footerHeight = (6 + [GroupedTableViewStyle heightForFooterText:text
+                                                               withWidth:kLabelWidth]);
   if (isLastSection) {
     // Footer for last section has extra space below the text.
     footerHeight += 6;
@@ -77,21 +103,33 @@
 
 + (UIView *) viewForFooterWithText:(NSString *)text
                      isLastSection:(BOOL)isLastSection {
-  CGFloat footerTextHeight = [GroupedTableViewStyle heightForFooterText:text];
   CGFloat footerHeight = [GroupedTableViewStyle
                           heightForFooterWithText:text
                           isLastSection:isLastSection];
-  
   UIView *footer = [[[UIView alloc]
                      initWithFrame:CGRectMake(0, 0, kScreenWidth, footerHeight)]
                     autorelease];
   footer.backgroundColor = [UIColor groupTableViewBackgroundColor];
   
+  UILabel *label = [GroupedTableViewStyle labelLikeFooterWithText:text
+                                                            width:kLabelWidth];
+  CGRect frame = label.frame;
+  frame.origin = CGPointMake(kLabelLeftPosition, 6);
+  label.frame = frame;
+  [footer addSubview:label];
+  return footer;
+}
+
++ (UILabel *) labelLikeFooterWithText:(NSString *)text
+                                width:(CGFloat)width {
+  CGFloat footerTextHeight = [GroupedTableViewStyle heightForFooterText:text
+                                                              withWidth:width];
   UIFont *font = [UIFont systemFontOfSize:kFooterFontHeight];
+
   UILabel *label = [[[UILabel alloc]
-                     initWithFrame:CGRectMake(kLabelLeftPosition,
-                                              6,
-                                              kLabelWidth,
+                     initWithFrame:CGRectMake(0,
+                                              0,
+                                              width,
                                               footerTextHeight)]
                     autorelease];
   label.backgroundColor = [UIColor clearColor];
@@ -102,8 +140,7 @@
   label.numberOfLines = 0;
   [GroupedTableViewStyle setLabelColorAndShadow:label];
   
-  [footer addSubview:label];
-  return footer;
+  return label;
 }
 
 @end
